@@ -114,9 +114,9 @@ class HuggingfaceDataset(object):
     @staticmethod
     def get_default_config(updates=None):
         config = ConfigDict()
-        config.seq_length = 1024
-        config.path = 'Thewillonline/reddit-v1-all'
-        config.name = 'reddit-v1-all'
+        config.seq_length = 2048
+        config.path = 'Thewillonline/gpt4'
+        config.name = 'gpt4'
         config.split = 'train'
         config.streaming = True
         config.batch_size = 8
@@ -193,7 +193,7 @@ class JsonDataset(object):
     def get_default_config(updates=None):
         config = ConfigDict()
         config.path = ''
-        config.seq_length = 1024
+        config.seq_length = 2048
         config.batch_size = 8
 
         if updates is not None:
