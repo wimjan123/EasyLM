@@ -118,7 +118,8 @@ class HuggingfaceDataset(object):
         config.path = 'Thewillonline/gpt4'
         config.name = 'gpt4'
         config.split = 'train'
-        config.streaming = True
+        config.streaming = False
+        config.seq_length = 1024
         config.batch_size = 8
 
         if updates is not None:

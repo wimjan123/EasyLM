@@ -6,16 +6,32 @@ import os
 from threading import Lock
 import urllib
 import time
+from typing import List, Optional
 
+from pydantic import BaseModel
 import absl.logging
 from tqdm import tqdm, trange
 import numpy as np
 import mlxu
 from ml_collections import ConfigDict
-from ml_collections.config_dict import config_dict
-from flask import Flask, request
+import uvicorn
+from fastapi import FastAPI
+import gradio as gr
 import requests
 from requests.exceptions import Timeout, ConnectionError
+
+
+class InferenceRequest(BaseModel):
+    prefix_text: Optional[List[str]] = None
+    text: Optional[List[str]] = None
+    until: Optional[List[str]] = None
+    temperature: Optional[float] = None
+
+
+class ChatRequest(BaseModel):
+    prompt: str
+    context: str = ''
+    temperature: Optional[float] = None
 
 
 class LMServer(object):
@@ -30,12 +46,18 @@ class LMServer(object):
         config.batch_size = 1
         config.logging = False
         config.pre_compile = 'loglikelihood'
+        config.default_temperature = 1.0
         config.greedy_until_max_length = 5000
+        config.prepend_to_prefix = ''
+        config.append_to_prefix = ''
+        config.prepend_to_text = ''
+        config.append_to_text = ''
         config.chat_prepend_text = ''
         config.chat_user_prefix = ''
         config.chat_user_suffix = ''
         config.chat_lm_prefix = ''
         config.chat_lm_suffix = ''
+        config.notes = ''
 
         if updates is not None:
             config.update(ConfigDict(updates).copy_and_resolve_references())
@@ -43,20 +65,15 @@ class LMServer(object):
 
     def __init__(self, config):
         self.config = self.get_default_config(config)
-        chat_html_path = os.path.join(
-            os.path.dirname(os.path.realpath(__file__)), 'chat.html'
-        )
-        with open(chat_html_path) as fin:
-            self.chat_html = fin.read()
         self.lock = Lock()
-        self.app = Flask(self.config.name)
+        self.app = FastAPI()
         self.app.post('/loglikelihood')(self.serve_loglikelihood)
         self.app.post('/loglikelihood-rolling')(self.serve_loglikelihood_rolling)
         self.app.post('/generate')(self.serve_generate)
         self.app.post('/greedy-until')(self.serve_greedy_until)
-        self.app.get('/ready')(self.serve_ready)
         self.app.post('/chat')(self.serve_chat)
-        self.app.get('/')(self.serve_root)
+        self.app.get('/ready')(self.serve_ready)
+        self.app = gr.mount_gradio_app(self.app, self.create_chat_app(), '/')
 
     @staticmethod
     def loglikelihood(prefix_text, text):
@@ -67,7 +84,7 @@ class LMServer(object):
         raise NotImplementedError()
 
     @staticmethod
-    def generate(text):
+    def generate(text, temperature):
         raise NotImplementedError()
 
     @staticmethod
@@ -80,20 +97,28 @@ class LMServer(object):
             return x.tolist()
         return x
 
-    def serve_loglikelihood(self):
+    def serve_ready(self):
+        return 'Ready!\n'
+
+    def serve_loglikelihood(self, data: InferenceRequest):
         with self.lock:
-            data = request.get_json()
             if self.config.logging:
                 absl.logging.info(
                     '\n========= Serving Log Likelihood Request ========= \n'
                     + pprint.pformat(data) + '\n'
                 )
 
-            text = data['text']
-            if 'prefix_text' not in data:
-                prefix_text = ['' for _ in text]
-            else:
-                prefix_text = data['prefix_text']
+            if data.prefix_text is None:
+                data.prefix_text = ['' for _ in data.text]
+
+            prefix_text = [
+                self.config.prepend_to_prefix + p + self.config.append_to_prefix
+                for p in data.prefix_text
+            ]
+            text = [
+                self.config.prepend_to_text + t + self.config.append_to_text
+                for t in data.text
+            ]
 
             log_likelihood = []
             is_greedy = []
@@ -116,8 +141,8 @@ class LMServer(object):
                 is_greedy.extend(batch_is_greedy[:batch_size])
 
             output = {
-                'prefix_text': prefix_text,
-                'text': text,
+                'prefix_text': data.prefix_text,
+                'text': data.text,
                 'log_likelihood': log_likelihood,
                 'is_greedy': is_greedy,
             }
@@ -129,16 +154,18 @@ class LMServer(object):
 
         return output
 
-    def serve_loglikelihood_rolling(self):
+    def serve_loglikelihood_rolling(self, data: InferenceRequest):
         with self.lock:
-            data = request.get_json()
             if self.config.logging:
                 absl.logging.info(
                     '\n========= Serving Log Likelihood Request ========= \n'
                     + pprint.pformat(data) + '\n'
                 )
 
-            text = data['text']
+            text = [
+                self.config.prepend_to_text + t + self.config.append_to_text
+                for t in data.text
+            ]
             log_likelihood = []
             is_greedy = []
             for i in trange(0, len(text), self.config.batch_size, ncols=0):
@@ -158,7 +185,7 @@ class LMServer(object):
                 is_greedy.extend(batch_is_greedy[:batch_size])
 
             output = {
-                'text': text,
+                'text': data.text,
                 'log_likelihood': log_likelihood,
                 'is_greedy': is_greedy,
             }
@@ -170,15 +197,20 @@ class LMServer(object):
 
         return output
 
-    def serve_generate(self):
+    def serve_generate(self, data: InferenceRequest):
         with self.lock:
-            data = request.get_json()
             if self.config.logging:
                 absl.logging.info(
                     '\n========= Serving Generate Request ========= \n'
                     + pprint.pformat(data) + '\n'
                 )
-            prefix_text = data['prefix_text']
+            prefix_text = [
+                self.config.prepend_to_prefix + p + self.config.append_to_prefix
+                for p in data.prefix_text
+            ]
+
+            if data.temperature is None:
+                data.temperature = self.config.default_temperature
 
             output_text = []
             for i in trange(0, len(prefix_text), self.config.batch_size, ncols=0):
@@ -189,12 +221,16 @@ class LMServer(object):
                     extra = self.config.batch_size - batch_size
                     batch_prefix_text.extend(['a' for _ in range(extra)])
 
-                batch_output_text = self.generate(batch_prefix_text)
+                batch_output_text = self.generate(
+                    batch_prefix_text,
+                    temperature=data.temperature,
+                )
                 output_text.extend(self.to_list(batch_output_text)[:batch_size])
 
             output = {
-                'prefix_text': prefix_text,
+                'prefix_text': data.prefix_text,
                 'output_text': output_text,
+                'temperature': data.temperature,
             }
             if self.config.logging:
                 absl.logging.info(
@@ -203,17 +239,19 @@ class LMServer(object):
                 )
         return output
 
-    def serve_greedy_until(self):
+    def serve_greedy_until(self, data: InferenceRequest):
         with self.lock:
-            data = request.get_json()
             if self.config.logging:
                 absl.logging.info(
                     '\n========= Serving Greedy Until Request ========= \n'
                     + pprint.pformat(data) + '\n'
                 )
-            prefix_text = data['prefix_text']
-            until = data['until']
-            max_length = data.get('max_length', self.config.greedy_until_max_length)
+            prefix_text = [
+                self.config.prepend_to_prefix + p + self.config.append_to_prefix
+                for p in data.prefix_text
+            ]
+            until = data.until
+            max_length = self.config.greedy_until_max_length
 
             output_text = []
             for i in range(0, len(prefix_text), self.config.batch_size):
@@ -225,8 +263,8 @@ class LMServer(object):
                 output_text.extend(self.to_list(batch_output_text)[:batch_size])
 
             output = {
-                'prefix_text': prefix_text,
-                'until': until,
+                'prefix_text': data.prefix_text,
+                'until': data.until,
                 'max_length': max_length,
                 'output_text': output_text,
             }
@@ -237,28 +275,112 @@ class LMServer(object):
                 )
         return output
 
-    def serve_root(self):
-        return self.chat_html
+    def process_chat(self, prompt, context, temperature):
+        context = (
+            context + self.config.chat_user_prefix
+            + prompt + self.config.chat_user_suffix
+            + self.config.chat_lm_prefix
+        )
+        response = self.generate(
+            [self.config.chat_prepend_text + context],
+            temperature=float(temperature),
+        )[0]
+        context = context + response + self.config.chat_lm_suffix
+        return response, context
 
-    def serve_chat(self):
-        with self.lock:
-            data = request.get_json()
-            context = data['context']
-            prompt = data['prompt']
-            context = (
-                context + self.config.chat_user_prefix
-                + prompt + self.config.chat_user_suffix
-                + self.config.chat_lm_prefix
+    def serve_chat(self, data: ChatRequest):
+        if data.temperature is None:
+            data.temperature = self.config.default_temperature
+        response, context = self.process_chat(
+            data.prompt, data.context,
+            temperature=data.temperature,
+        )
+        return {
+            'response': response,
+            'context': context,
+            'temperature': data.temperature,
+        }
+
+    def create_chat_app(self):
+        with gr.Blocks(analytics_enabled=False, title='EasyLM Chat') as gradio_chatbot:
+            gr.Markdown('# Chatbot Powered by [EasyLM](https://github.com/young-geng/EasyLM)')
+            gr.Markdown(self.config.notes)
+            chatbot = gr.Chatbot(label='Chat history')
+            msg = gr.Textbox(
+                placeholder='Type your message here...',
+                show_label=False
             )
-            response = self.generate([self.config.chat_prepend_text + context])[0]
-            context = context + response + self.config.chat_lm_suffix
-            output = {'context': context, 'response': response}
-        return output
+            with gr.Row():
+                send = gr.Button('Send')
+                clear = gr.Button('Reset')
 
-    def serve_ready(self):
-        return 'Ready!\n'
+            temp_slider = gr.Slider(
+                label='Temperature', minimum=0, maximum=2.0,
+                value=self.config.default_temperature
+            )
 
-    def run_server(self):
+            context_state = gr.State('')
+
+            def user_fn(user_message, history):
+                return {
+                    msg: gr.update(value='', interactive=False),
+                    clear: gr.update(interactive=False),
+                    send: gr.update(interactive=False),
+                    chatbot: history + [[user_message, None]],
+                }
+
+            def model_fn(history, context, temperature):
+                history[-1][1], context = self.process_chat(
+                    history[-1][0], context, temperature
+                )
+                return {
+                    msg: gr.update(value='', interactive=True),
+                    clear: gr.update(interactive=True),
+                    send: gr.update(interactive=True),
+                    chatbot: history,
+                    context_state: context,
+                }
+
+            def clear_fn():
+                return {
+                    chatbot: None,
+                    msg: '',
+                    context_state: '',
+                }
+
+            msg.submit(
+                user_fn,
+                inputs=[msg, chatbot],
+                outputs=[msg, clear, send, chatbot],
+                queue=False
+            ).then(
+                model_fn,
+                inputs=[chatbot, context_state, temp_slider],
+                outputs=[msg, clear, send, chatbot, context_state],
+                queue=True
+            )
+            send.click(
+                user_fn,
+                inputs=[msg, chatbot],
+                outputs=[msg, clear, send, chatbot],
+                queue=False
+            ).then(
+                model_fn,
+                inputs=[chatbot, context_state, temp_slider],
+                outputs=[msg, clear, send, chatbot, context_state],
+                queue=True
+            )
+            clear.click(
+                clear_fn,
+                inputs=None,
+                outputs=[chatbot, msg, context_state],
+                queue=False
+            )
+
+        gradio_chatbot.queue(concurrency_count=1)
+        return gradio_chatbot
+
+    def run(self):
         if self.config.pre_compile != '':
             if self.config.pre_compile == 'all':
                 pre_compile = ['loglikelihood', 'generate', 'greedy_until', 'chat']
@@ -271,22 +393,18 @@ class LMServer(object):
                     self.loglikelihood(pre_compile_data, pre_compile_data)
                     self.loglikelihood_rolling(pre_compile_data)
                 elif task == 'generate':
-                    self.generate(pre_compile_data)
+                    self.generate(pre_compile_data, 1.0)
                 elif task == 'greedy_until':
                     self.greedy_until(
                         pre_compile_data, pre_compile_data,
                         self.config.greedy_until_max_length
                     )
                 elif task == 'chat':
-                    # Compile a batch 1 generate for chat
-                    self.generate(['a'])
+                    self.process_chat('a', 'a', 1.0)
                 else:
                     raise ValueError(f'Invalid precompile task: {task}!')
 
-        self.app.run(host=self.config.host, port=self.config.port)
-
-    def run(self):
-        self.run_server()
+        uvicorn.run(self.app, host=self.config.host, port=self.config.port)
 
 
 class LMClient(object):
@@ -349,12 +467,28 @@ class LMClient(object):
         ).json()
         return response['output_text']
 
-    def generate(self, prefix):
+    def generate(self, prefix, temperature=None):
         prefix = list(prefix)
         if self.config.dummy:
             return ['' for _ in prefix]
         response = requests.post(
             urllib.parse.urljoin(self.config.url, 'generate'),
-            json={'prefix_text': prefix}
+            json={
+                'prefix_text': prefix,
+                'temperature': temperature,
+            }
         ).json()
         return response['output_text']
+
+    def chat(self, prompt, context, temperature=None):
+        if self.config.dummy:
+            return ''
+        response = requests.post(
+            urllib.parse.urljoin(self.config.url, 'chat'),
+            json={
+                'prompt': prompt,
+                'context': context,
+                'temperature': temperature,
+            }
+        ).json()
+        return response['response'], response['context']
