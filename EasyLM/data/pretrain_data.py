@@ -85,7 +85,7 @@ class TextProcessor(object):
             if field == '<|bos|>':
                 token_buffer.append(self.tokenizer.bos_token_id)
                 loss_mask_buffer.append(mask)
-            elif field == '<|eos|>':
+            elif field == '<|endoftext|>':
                 token_buffer.append(self.tokenizer.eos_token_id)
                 loss_mask_buffer.append(mask)
             else:
