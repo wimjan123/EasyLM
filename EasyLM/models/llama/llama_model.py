@@ -219,7 +219,7 @@ class LLaMAConfig(PretrainedConfig):
     @staticmethod
     def get_tokenizer_config(updates=None):
         config = ConfigDict()
-        config.vocab_file = ''
+        config.vocab_file = '/ai/data/tokenizer.model'
         config.add_bos_token = False
         config.add_eos_token = False
 
