@@ -51,7 +51,7 @@ class TextProcessor(object):
     def get_default_config(updates=None):
         config = ConfigDict()
         config.fields_from_example = ''
-        config.fields = '[]---'
+        config.fields = '[],text'
         config.subfield_separator = ' '
         config.add_eos_token = True
         config.prepend_text = ''
