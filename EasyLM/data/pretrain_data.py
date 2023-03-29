@@ -119,7 +119,7 @@ class HuggingfaceDataset(object):
         config.name = 'gpt4'
         config.split = 'train'
         config.streaming = False
-        config.seq_length = 1024
+        config.seq_length = 2048
         config.batch_size = 8
 
         if updates is not None:
