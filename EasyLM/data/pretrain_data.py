@@ -52,7 +52,7 @@ class TextProcessor(object):
         config = ConfigDict()
         config.fields_from_example = ''
         config.fields = '[]'
-        config.subfield_separator = ' '
+        config.subfield_separator = ''
         config.add_eos_token = True
         config.prepend_text = ''
         if updates is not None:
