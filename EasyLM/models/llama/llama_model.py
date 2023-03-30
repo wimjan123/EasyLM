@@ -219,7 +219,7 @@ class LLaMAConfig(PretrainedConfig):
     @staticmethod
     def get_tokenizer_config(updates=None):
         config = ConfigDict()
-        config.vocab_file = 'gs://gpt-j-train/LLAMA/13B/tokenizer.model'
+        config.vocab_file = 'gs://gpt-j-train/LLAMA/tokenizer.model'
         config.add_bos_token = False
         config.add_eos_token = False
 
