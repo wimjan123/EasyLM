@@ -32,7 +32,7 @@ from EasyLM.models.gptj.gptj_model import GPTJConfig, FlaxGPTJForCausalLMModule
 FLAGS, FLAGS_DEF = mlxu.define_flags_with_default(
     seed=42,
     initialize_jax_distributed=True,
-    mp_mesh_dim=-1,
+    mp_mesh_dim=4,
     total_steps=52534,
     load_gptj_config='huggingface::EleutherAI/gpt-j-6B',
     update_gptj_config='',
