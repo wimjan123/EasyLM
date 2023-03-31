@@ -195,7 +195,7 @@ class JsonDataset(object):
         config = ConfigDict()
         config.path = ''
         config.seq_length = 2048
-        config.batch_size = 64
+        config.batch_size = 16
 
         if updates is not None:
             config.update(ConfigDict(updates).copy_and_resolve_references())
