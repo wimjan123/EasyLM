@@ -118,9 +118,9 @@ class HuggingfaceDataset(object):
         config.path = 'Thewillonline/gpt4'
         config.name = 'gpt4'
         config.split = 'train'
-        config.streaming = True
+        config.streaming = False
         config.seq_length = 2048
-        config.batch_size = 32
+        config.batch_size = 16
 
         if updates is not None:
             config.update(ConfigDict(updates).copy_and_resolve_references())
@@ -195,7 +195,7 @@ class JsonDataset(object):
         config = ConfigDict()
         config.path = ''
         config.seq_length = 2048
-        config.batch_size = 16
+        config.batch_size = 8
 
         if updates is not None:
             config.update(ConfigDict(updates).copy_and_resolve_references())
