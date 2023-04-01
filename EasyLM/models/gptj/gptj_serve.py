@@ -46,7 +46,7 @@ FLAGS, FLAGS_DEF = mlxu.define_flags_with_default(
     num_beams=1,
     loglikelihood_add_bos_token=False,
     load_gptj_config='huggingface::EleutherAI/gpt-j-6B',
-    load_checkpoint='/convert/gpt-j/flax/gpt-4chan-v2.msgpack',
+    load_checkpoint='trainstate::/convert/gpt-j/flax/gpt-4chan-v2.msgpack',
     tokenizer=GPTJConfig.get_tokenizer_config(),
     lm_server=LMServer.get_default_config(),
 )
