@@ -23,7 +23,8 @@ gcloud compute tpus tpu-vm ssh ${TPU_NAME} \
 
 gcloud compute tpus tpu-vm ssh ${TPU_NAME} \
 --zone=${ZONE} \
---worker=all --command=' cd EasyLM/ && git pull'
+--worker=all \
+--command=' cd EasyLM/ && git pull'
 
 
 
@@ -32,3 +33,8 @@ gcloud compute tpus tpu-vm ssh ${TPU_NAME} \
 --zone=${ZONE} \
 --worker=all \
 --command='cd EasyLM/ && python3 -m EasyLM.models.gptj.gptj_train --train_dataset.type='huggingface' --logger.online True --logger.gcs_output_dir gs://gpt-j-train/GPT-4-JAX'
+
+
+
+
+python3 -m EasyLM.models.gptj.gptj_train --train_dataset.type='huggingface' --logger.online True --logger.gcs_output_dir gs://gpt-j-train/GPT-4-JAX --optimizer.accumulate_gradient_steps=32
