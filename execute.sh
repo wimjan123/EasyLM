@@ -38,3 +38,7 @@ gcloud compute tpus tpu-vm ssh ${TPU_NAME} \
 
 
 python3 -m EasyLM.models.gptj.gptj_train --train_dataset.type='huggingface' --logger.online True --logger.gcs_output_dir gs://gpt-j-train/GPT-4-JAX --optimizer.type=adamw --optimizer.accumulate_gradient_steps=32
+
+python3 -m EasyLM.models.llama.llama_train --train_dataset.type='huggingface' --logger.online True --logger.gcs_output_dir gs://gpt-j-train/llama4-output/ --optimizer.type=adamw --optimizer.accumulate_gradient_steps=32
+
+python3 -m EasyLM.models.llama.llama_train --train_dataset.type='huggingface' --logger.online True --logger.gcs_output_dir gs://gpt-j-train/llama4-output/ --optimizer.type=adamw --optimizer.accumulate_gradient_steps=32
