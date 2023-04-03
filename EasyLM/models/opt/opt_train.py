@@ -41,12 +41,12 @@ FLAGS, FLAGS_DEF = mlxu.define_flags_with_default(
     log_freq=50,
     save_model_freq=0,
     save_milestone_freq=0,
-    save_optimizer_state=False,
     eval_steps=0,
     tokenizer=OPTConfig.get_tokenizer_config(),
     train_dataset=DatasetFactory.get_default_config(),
     eval_dataset=DatasetFactory.get_default_config(),
     optimizer=OptimizerFactory.get_default_config(),
+    checkpointer=StreamingCheckpointer.get_default_config(),
     opt=OPTConfig.get_default_config(),
     logger=mlxu.WandBLogger.get_default_config(),
     log_all_worker=False,
@@ -168,8 +168,8 @@ def main(argv):
         train_state_partition, train_state_shapes
     )
     checkpointer = StreamingCheckpointer(
-        logger.checkpoint_dir, enable=jax.process_index() == 0,
-        save_optimizer_state=FLAGS.save_optimizer_state
+        FLAGS.checkpointer, logger.checkpoint_dir,
+        enable=jax.process_index() == 0,
     )
 
     sharded_init_fn = pjit(

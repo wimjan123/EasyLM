@@ -33,9 +33,9 @@ from EasyLM.models.llama.llama_model import (
 
 FLAGS, FLAGS_DEF = mlxu.define_flags_with_default(
     seed=42,
-    initialize_jax_distributed=True,
-    mp_mesh_dim='1,-1',
-    total_steps=100000,
+    initialize_jax_distributed=False,
+    mp_mesh_dim='-1,1',
+    total_steps=10000,
     load_llama_config='13b',
     update_llama_config='',
     load_checkpoint='params::gs://gpt-j-train/llama_easy/13B/streaming_params',
@@ -49,6 +49,7 @@ FLAGS, FLAGS_DEF = mlxu.define_flags_with_default(
     train_dataset=DatasetFactory.get_default_config(),
     eval_dataset=DatasetFactory.get_default_config(),
     optimizer=OptimizerFactory.get_default_config(),
+    checkpointer=StreamingCheckpointer.get_default_config(),
     llama=LLaMAConfig.get_default_config(),
     logger=mlxu.WandBLogger.get_default_config(),
     log_all_worker=False,
@@ -170,8 +171,8 @@ def main(argv):
         train_state_partition, train_state_shapes
     )
     checkpointer = StreamingCheckpointer(
-        logger.checkpoint_dir, enable=jax.process_index() == 0,
-        save_optimizer_state=FLAGS.save_optimizer_state
+        FLAGS.checkpointer, logger.checkpoint_dir,
+        enable=jax.process_index() == 0,
     )
 
     sharded_init_fn = pjit(
