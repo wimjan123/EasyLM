@@ -51,8 +51,8 @@ class TextProcessor(object):
     def get_default_config(updates=None):
         config = ConfigDict()
         config.fields_from_example = ''
-        config.fields = ''
-        config.subfield_separator = ' '
+        config.fields = 'text'
+        config.subfield_separator = ''
         config.add_eos_token = True
         config.prepend_text = ''
         if updates is not None:
@@ -85,7 +85,7 @@ class TextProcessor(object):
             if field == '<|bos|>':
                 token_buffer.append(self.tokenizer.bos_token_id)
                 loss_mask_buffer.append(mask)
-            elif field == '<|eos|>':
+            elif field == '<|endoftext|>':
                 token_buffer.append(self.tokenizer.eos_token_id)
                 loss_mask_buffer.append(mask)
             else:
@@ -114,11 +114,12 @@ class HuggingfaceDataset(object):
     @staticmethod
     def get_default_config(updates=None):
         config = ConfigDict()
-        config.path = 'c4'
-        config.name = 'en'
+        config.seq_length = 2048
+        config.path = 'Thewillonline/gpt4'
+        config.name = 'gpt4'
         config.split = 'train'
         config.streaming = False
-        config.seq_length = 1024
+        config.seq_length = 2048
         config.batch_size = 8
 
         if updates is not None:
@@ -193,7 +194,7 @@ class JsonDataset(object):
     def get_default_config(updates=None):
         config = ConfigDict()
         config.path = ''
-        config.seq_length = 1024
+        config.seq_length = 2048
         config.batch_size = 8
 
         if updates is not None:
