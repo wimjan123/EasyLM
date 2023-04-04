@@ -48,13 +48,13 @@ python3 -m EasyLM.models.llama.llama_train \
 --mp_mesh_dim='16,1' \
 --total_steps='2500000' \
 --load_llama_config='13b' \
---load_checkpoint='params::gs://gpt-j-train/llama_stream/13B_2/streaming_params' \
+--load_checkpoint='params::gs://gpt-j-train/llama_stream/13B/streaming_params' \
 --initialize_jax_distributed='True' \
 --save_model_freq='5000' \
 --save_milestone_freq='10000' \
 --log_freq='500' \
 --optimizer.type=adamw \
---optimizer.accumulate_gradient_steps=32 \
+--optimizer.accumulate_gradient_steps=128 \
 --optimizer.bf16_accumulate_gradient='True' \
 --eval_steps='0' \
 --logger.gcs_output_dir='gs://gpt-j-train/GPT-4/' \

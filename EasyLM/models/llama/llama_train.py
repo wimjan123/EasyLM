@@ -29,7 +29,9 @@ from EasyLM.jax_utils import (
 from EasyLM.models.llama.llama_model import (
     LLaMAConfig, FlaxLLaMAForCausalLM, FlaxLLaMAForCausalLMModule
 )
+import jax.profiler
 
+jax.profiler.start_server(9999)
 
 FLAGS, FLAGS_DEF = mlxu.define_flags_with_default(
     seed=42,
