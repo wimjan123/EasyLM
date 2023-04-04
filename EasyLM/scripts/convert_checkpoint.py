@@ -12,7 +12,6 @@ import jax.numpy as jnp
 import flax.serialization
 from EasyLM.checkpoint import StreamingCheckpointer
 from EasyLM.jax_utils import float_to_dtype
-import jax
 
 
 FLAGS, FLAGS_DEF = mlxu.define_flags_with_default(
@@ -35,16 +34,8 @@ def main(argv):
         )
     else:
         params = float_to_dtype(params, FLAGS.float_dtype)
-        def to_py(x):
-            if isinstance(x, jnp.ndarray):
-                return x.to_py()
-            elif isinstance(x, np.ndarray):
-                return x.tolist()
-            else:
-                return x
-        params_dict = jax.tree_util.tree_map(to_py, params)
         with mlxu.open_file(FLAGS.output_file, 'wb') as fout:
-            fout.write(flax.serialization.msgpack_serialize(params_dict, in_place=True))
+            fout.write(flax.serialization.msgpack_serialize(params, in_place=True))
 
 
 if __name__ == "__main__":
