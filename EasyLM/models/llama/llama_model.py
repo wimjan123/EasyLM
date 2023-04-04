@@ -263,8 +263,8 @@ logger = logging.get_logger(__name__)
 class RMSNorm(nn.Module):
     dim: int
     eps: float=1e-6
-    dtype: jnp.dtype=jnp.float32
-    param_dtype: jnp.dtype=jnp.float32
+    dtype: jnp.dtype=jnp.bfloat16
+    param_dtype: jnp.dtype=jnp.bfloat16
 
     def setup(self) -> None:
         self.weight = self.param(
@@ -282,7 +282,7 @@ class RMSNorm(nn.Module):
         weight = jnp.asarray(self.weight, self.dtype)
         return output * weight
 
-def precompute_freqs_cis(dim: int, end: int, theta: float=10000.0, dtype: jnp.dtype=jnp.float32) -> jnp.ndarray:
+def precompute_freqs_cis(dim: int, end: int, theta: float=10000.0, dtype: jnp.dtype=jnp.bfloat16) -> jnp.ndarray:
     freqs = 1.0 / (theta ** (np.arange(0, dim, 2)[: (dim // 2)].astype(dtype) / dim))
     t = np.arange(end)  # type: ignore
     freqs = np.outer(t, freqs).astype(dtype)  # type: ignore
@@ -294,11 +294,11 @@ def apply_rotary_emb(
     xq: jnp.ndarray,
     xk: jnp.ndarray,
     freqs_cis: jnp.ndarray,
-    dtype: jnp.dtype=jnp.float32,
+    dtype: jnp.dtype=jnp.bfloat16,
 ) -> Tuple[jnp.ndarray, jnp.ndarray]:
 
-    reshape_xq = xq.astype(jnp.float32).reshape(*xq.shape[:-1], -1, 2)
-    reshape_xk = xk.astype(jnp.float32).reshape(*xk.shape[:-1], -1, 2)
+    reshape_xq = xq.astype(jnp.bfloat16).reshape(*xq.shape[:-1], -1, 2)
+    reshape_xk = xk.astype(jnp.bfloat16).reshape(*xk.shape[:-1], -1, 2)
 
     xq_ = jax.lax.complex(reshape_xq[..., 0], reshape_xq[..., 1])
     xk_ = jax.lax.complex(reshape_xk[..., 0], reshape_xk[..., 1])
@@ -317,8 +317,8 @@ def apply_rotary_emb(
 
 class FlaxLLaMAAttention(nn.Module):
     config: LLaMAConfig
-    dtype: jnp.dtype=jnp.float32
-    param_dtype: jnp.dtype=jnp.float32
+    dtype: jnp.dtype=jnp.bfloat16
+    param_dtype: jnp.dtype=jnp.bfloat16
     precision: Optional[Union[jax.lax.Precision, str]]=None
 
     def setup(self):
@@ -500,8 +500,8 @@ class FlaxLLaMAAttention(nn.Module):
 
 class FlaxLLaMAMLP(nn.Module):
     config: LLaMAConfig
-    dtype: jnp.dtype=jnp.float32
-    param_dtype: jnp.dtype=jnp.float32
+    dtype: jnp.dtype=jnp.bfloat16
+    param_dtype: jnp.dtype=jnp.bfloat16
     precision: Optional[Union[jax.lax.Precision, str]]=None
 
     def setup(self) -> None:
@@ -541,8 +541,8 @@ class FlaxLLaMAMLP(nn.Module):
 
 class FlaxLLaMABlock(nn.Module):
     config: LLaMAConfig
-    dtype: jnp.dtype=jnp.float32
-    param_dtype: jnp.dtype=jnp.float32
+    dtype: jnp.dtype=jnp.bfloat16
+    param_dtype: jnp.dtype=jnp.bfloat16
     precision: Optional[Union[jax.lax.Precision, str]]=None
 
     def setup(self) -> None:
@@ -617,7 +617,7 @@ class FlaxLLaMAPreTrainedModel(FlaxPreTrainedModel):
         config: LLaMAConfig,
         input_shape: Tuple = (1, 1),
         seed: int = 0,
-        dtype: jnp.dtype = jnp.float32,
+        dtype: jnp.dtype = jnp.bfloat16,
         _do_init: bool = True,
         **kwargs,
     ):
@@ -751,8 +751,8 @@ class FlaxLLaMAPreTrainedModel(FlaxPreTrainedModel):
 
 class FlaxLLaMABlockCollection(nn.Module):
     config: LLaMAConfig
-    dtype: jnp.dtype = jnp.float32
-    param_dtype: jnp.dtype=jnp.float32
+    dtype: jnp.dtype = jnp.bfloat16
+    param_dtype: jnp.dtype=jnp.bfloat16
     precision: Optional[Union[jax.lax.Precision, str]]=None
 
     def setup(self):
@@ -824,8 +824,8 @@ class FlaxLLaMABlockCollection(nn.Module):
 
 class FlaxLLaMAModule(nn.Module):
     config: LLaMAConfig
-    dtype: jnp.dtype = jnp.float32
-    param_dtype: jnp.dtype=jnp.float32
+    dtype: jnp.dtype = jnp.bfloat16
+    param_dtype: jnp.dtype=jnp.bfloat16
     precision: Optional[Union[jax.lax.Precision, str]]=None
 
     def setup(self):
@@ -900,8 +900,8 @@ class FlaxLLaMAModel(FlaxLLaMAPreTrainedModel):
 
 class FlaxLLaMAForCausalLMModule(nn.Module):
     config: LLaMAConfig
-    dtype: jnp.dtype = jnp.float32
-    param_dtype: jnp.dtype=jnp.float32
+    dtype: jnp.dtype = jnp.bfloat16
+    param_dtype: jnp.dtype=jnp.bfloat16
     precision: Optional[Union[jax.lax.Precision, str]]=None
 
     def setup(self):
