@@ -114,8 +114,8 @@ class HuggingfaceDataset(object):
     @staticmethod
     def get_default_config(updates=None):
         config = ConfigDict()
-        config.path = 'Thewillonline'
-        config.name = 'l-gpt4'
+        config.path = 'Thewillonline/l-gpt4'
+        config.name = 'text'
         config.split = 'train'
         config.streaming = False
         config.seq_length = 1024
