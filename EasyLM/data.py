@@ -18,7 +18,7 @@ class DatasetFactory(object):
     @staticmethod
     def get_default_config(updates=None):
         config = ConfigDict()
-        config.type = 'json'
+        config.type = 'huggingface'
         config.text_processor = TextProcessor.get_default_config()
         config.huggingface_dataset = HuggingfaceDataset.get_default_config()
         config.json_dataset = JsonDataset.get_default_config()
@@ -114,8 +114,8 @@ class HuggingfaceDataset(object):
     @staticmethod
     def get_default_config(updates=None):
         config = ConfigDict()
-        config.path = 'c4'
-        config.name = 'en'
+        config.path = 'Thewillonline'
+        config.name = 'l-gpt4'
         config.split = 'train'
         config.streaming = False
         config.seq_length = 1024
