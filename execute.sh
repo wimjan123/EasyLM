@@ -54,7 +54,7 @@ python3 -m EasyLM.models.llama.llama_train \
 --save_milestone_freq='10000' \
 --log_freq='500' \
 --optimizer.type=adamw \
---optimizer.accumulate_gradient_steps=128 \
+--optimizer.accumulate_gradient_steps=64 \
 --optimizer.bf16_accumulate_gradient='True' \
 --eval_steps='0' \
 --logger.gcs_output_dir='gs://gpt-j-train/GPT-4/' \
