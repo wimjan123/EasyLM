@@ -18,7 +18,7 @@ class DatasetFactory(object):
     @staticmethod
     def get_default_config(updates=None):
         config = ConfigDict()
-        config.type = 'huggingface'
+        config.type = 'json'
         config.text_processor = TextProcessor.get_default_config()
         config.huggingface_dataset = HuggingfaceDataset.get_default_config()
         config.json_dataset = JsonDataset.get_default_config()
@@ -51,8 +51,8 @@ class TextProcessor(object):
     def get_default_config(updates=None):
         config = ConfigDict()
         config.fields_from_example = ''
-        config.fields = 'text'
-        config.subfield_separator = ''
+        config.fields = '[question],answer'
+        config.subfield_separator = ' '
         config.add_eos_token = True
         config.prepend_text = ''
         if updates is not None:
@@ -85,7 +85,7 @@ class TextProcessor(object):
             if field == '<|bos|>':
                 token_buffer.append(self.tokenizer.bos_token_id)
                 loss_mask_buffer.append(mask)
-            elif field == '<|endoftext|>':
+            elif field == '<|eos|>':
                 token_buffer.append(self.tokenizer.eos_token_id)
                 loss_mask_buffer.append(mask)
             else:
@@ -114,13 +114,12 @@ class HuggingfaceDataset(object):
     @staticmethod
     def get_default_config(updates=None):
         config = ConfigDict()
-        config.seq_length = 2048
-        config.path = 'Thewillonline/gpt4'
-        config.name = 'gpt4'
+        config.path = 'c4'
+        config.name = 'en'
         config.split = 'train'
         config.streaming = False
-        config.seq_length = 2048
-        config.batch_size = 2
+        config.seq_length = 1024
+        config.batch_size = 8
 
         if updates is not None:
             config.update(ConfigDict(updates).copy_and_resolve_references())
@@ -193,9 +192,9 @@ class JsonDataset(object):
     @staticmethod
     def get_default_config(updates=None):
         config = ConfigDict()
-        config.path = ''
-        config.seq_length = 2048
-        config.batch_size = 2
+        config.path = 'gs://gpt-j-train/dataset/gpt4.json'
+        config.seq_length = 1024
+        config.batch_size = 4
 
         if updates is not None:
             config.update(ConfigDict(updates).copy_and_resolve_references())
