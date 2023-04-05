@@ -30,6 +30,11 @@ from EasyLM.models.llama.llama_model import (
     LLaMAConfig, FlaxLLaMAForCausalLM, FlaxLLaMAForCausalLMModule
 )
 import jax.profiler
+from jax_smi import initialise_tracking
+
+
+initialise_tracking()
+
 
 jax.profiler.start_server(9999)
 
