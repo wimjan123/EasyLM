@@ -18,7 +18,7 @@ class DatasetFactory(object):
     @staticmethod
     def get_default_config(updates=None):
         config = ConfigDict()
-        config.type = 'huggingface'
+        config.type = 'json'
         config.text_processor = TextProcessor.get_default_config()
         config.huggingface_dataset = HuggingfaceDataset.get_default_config()
         config.json_dataset = JsonDataset.get_default_config()
@@ -192,7 +192,7 @@ class JsonDataset(object):
     @staticmethod
     def get_default_config(updates=None):
         config = ConfigDict()
-        config.path = 'gs://gpt-j-train/dataset/gpt4.json'
+        config.path = '/dataset/gpt4.jsonl'
         config.seq_length = 1024
         config.batch_size = 4
 
