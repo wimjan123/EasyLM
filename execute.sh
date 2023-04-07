@@ -48,18 +48,26 @@ python3 -m EasyLM.models.llama.llama_train \
 --mp_mesh_dim='16,1' \
 --total_steps='2500000' \
 --load_llama_config='13b' \
+--checkpointer.float_dtype='fp32' \
 --load_checkpoint='params::gs://gpt-j-train/llama_stream/13B/streaming_params' \
 --initialize_jax_distributed='True' \
 --save_model_freq='5000' \
 --save_milestone_freq='10000' \
 --log_freq='500' \
 --optimizer.type=adamw \
---optimizer.accumulate_gradient_steps=64 \
---optimizer.bf16_accumulate_gradient='True' \
+--optimizer.adamw_optimizer.lr=1e-4 \
+--bf16_accumulate_gradient='True' \
+ -optimizer.accumulate_gradient_steps=32 \
 --eval_steps='0' \
 --logger.gcs_output_dir='gs://gpt-j-train/GPT-4/' \
 --logger.online='True' \
 --tokenizer.vocab_file='/llama/tokenizer.model' 
+
+
+python -m EasyLM.scripts.convert_checkpoint \
+    --load_checkpoint='params::path/to/checkpoint' \
+    --output_file='path/to/output/checkpoint' \
+    --streaming=False
 
 
 python3 -m EasyLM.scripts.convert_checkpoint \
@@ -90,12 +98,13 @@ python3 -m EasyLM.scripts.convert_checkpoint \
 python3 -m EasyLM.models.llama.llama_serve \
     --mp_mesh_dim='-1,1' \
     --load_llama_config='13b' \
-    --load_checkpoint='params::/convert/gpt-j/streaming_params' \
+    --load_checkpoint='params::gs://gpt-j-train/llama_stream/13B/streaming_params' \
     --dtype='bf16' \
     --lm_server.host='0.0.0.0' \
     --lm_server.pre_compile='loglikelihood' \
     --input_length=1024 \
-    --seq_length=2048 
+    --seq_length=2048 \
+    --tokenizer.vocab_file='/llama/tokenizer.model' 
 
 
 
