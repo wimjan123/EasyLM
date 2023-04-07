@@ -71,10 +71,10 @@ python -m EasyLM.scripts.convert_checkpoint \
 
 
 python3 -m EasyLM.scripts.convert_checkpoint \
-    --load_checkpoint='params::/convert/llama_jax/4train/streaming_params' \
-    --output_file='/convert/llama_jax/4train/bf16/streaming_params' \
-    --float_dtype='bf16' \
-    --streaming True
+    --load_checkpoint='params::gs://gpt-j-train/GPT-4/36db7e39151446a0be9539dac57f4833/streaming_params' \
+    --output_file='gs://gpt-j-train/GPT-4/36db7e39151446a0be9539dac57f4833/flax-model.msgpack' \
+    --float_dtype='fp32' \
+    --streaming FALSE
 
 
 
