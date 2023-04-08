@@ -192,8 +192,8 @@ class JsonDataset(object):
     @staticmethod
     def get_default_config(updates=None):
         config = ConfigDict()
-        config.path = '/dataset/gpt4.jsonl'
-        config.seq_length = 2048
+        config.path = '/dataset/gpt4-fixed.jsonl'
+        config.seq_length = 1024
         config.batch_size = 4
 
         if updates is not None:
